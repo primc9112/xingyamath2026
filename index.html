@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>數列探索實驗室 - Sequence Lab</title>
+    <title>數列探索實驗室</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -18,61 +18,47 @@
         .animate-shake { animation: shake 0.2s ease-in-out 0s 2; }
     </style>
 </head>
-<body>
+<body class="bg-slate-50">
     <div id="root"></div>
 
     <script type="text/babel">
-        // 從全域變數中取出 React Hook
-        const { useState, useEffect, useRef } = React;
-        
-        // 建立 Lucide 圖標組件
-        const Icon = ({ name, size = 24, className = "" }) => {
-            const [svg, setSvg] = React.useState("");
-            React.useEffect(() => {
-                const icon = lucide.icons[name];
-                if (icon) {
-                    const svgString = lucide.createIcons({ icons: { [name]: icon } });
-                }
-                // 使用原生方式處理 lucide 在瀏覽器端的渲染
-                lucide.createIcons();
-            }, [name]);
-            return <i data-lucide={name} style={{width: size, height: size}} className={className}></i>;
+        const { useState, useEffect } = React;
+
+        // 圖標封裝組件
+        const Icon = ({ name, className = "" }) => {
+            useEffect(() => { lucide.createIcons(); }, []);
+            return <i data-lucide={name} className={className}></i>;
         };
 
-        // --- 這裡放入你原本的代碼邏輯 ---
-        // 注意：這裡我幫你把原本的 <Layers /> 這種寫法改成瀏覽器通用的格式
-        
+        // --- 主程式碼 ---
         const SequenceLab = () => {
             const [activeTab, setActiveTab] = useState('arithmetic');
-            
             useEffect(() => { lucide.createIcons(); }, [activeTab]);
 
             return (
-                <div className="min-h-screen bg-slate-50 font-sans text-slate-800 selection:bg-blue-200">
+                <div className="min-h-screen font-sans text-slate-800">
                     <header className="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
                         <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
                             <div className="flex items-center gap-2">
-                                <div className="p-2 bg-blue-600 rounded-lg shadow-lg text-white">
-                                    <i data-lucide="calculator"></i>
+                                <div className="p-2 bg-blue-600 rounded-lg text-white">
+                                    <Icon name="calculator" />
                                 </div>
-                                <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-indigo-600">
-                                    數列探索實驗室
-                                </h1>
+                                <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-700 to-indigo-600">數列探索實驗室</h1>
                             </div>
                             <nav className="flex p-1 bg-slate-100 rounded-xl">
-                                <button onClick={() => setActiveTab('arithmetic')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium ${activeTab === 'arithmetic' ? 'bg-white text-blue-600 shadow-md' : 'text-slate-500'}`}>
-                                    <i data-lucide="layers" className="w-4 h-4"></i>等差階梯
-                                </button>
-                                <button onClick={() => setActiveTab('geometric')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium ${activeTab === 'geometric' ? 'bg-white text-blue-600 shadow-md' : 'text-slate-500'}`}>
-                                    <i data-lucide="trending-up" className="w-4 h-4"></i>等比爆發
-                                </button>
-                                <button onClick={() => setActiveTab('challenge')} className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium ${activeTab === 'challenge' ? 'bg-white text-blue-600 shadow-md' : 'text-slate-500'}`}>
-                                    <i data-lucide="help-circle" className="w-4 h-4"></i>規律挑戰
-                                </button>
+                                {[
+                                    { id: 'arithmetic', label: '等差階梯', icon: 'layers' },
+                                    { id: 'geometric', label: '等比爆發', icon: 'trending-up' },
+                                    { id: 'challenge', label: '規律挑戰', icon: 'help-circle' },
+                                ].map((tab) => (
+                                    <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id ? 'bg-white text-blue-600 shadow-md' : 'text-slate-500 hover:bg-slate-200'}`}>
+                                        <Icon name={tab.icon} className="w-4 h-4" />{tab.label}
+                                    </button>
+                                ))}
                             </nav>
                         </div>
                     </header>
-
                     <main className="max-w-6xl mx-auto px-4 py-8">
                         {activeTab === 'arithmetic' && <ArithmeticMode />}
                         {activeTab === 'geometric' && <GeometricMode />}
@@ -82,12 +68,134 @@
             );
         };
 
-        // ... (這裡補上你原本的 ArithmeticMode, GeometricMode, ChallengeMode 組件內容)
-        // 為了簡潔，你需要確保裡面的 <Play /> 改寫為 <i data-lucide="play"></i> 的格式
-        
-        // 這裡僅示範渲染
-        const container = document.getElementById('root');
-        const root = ReactDOM.createRoot(container);
+        // --- 等差數列組件 ---
+        const ArithmeticMode = () => {
+            const [a1, setA1] = useState(2);
+            const [d, setD] = useState(2);
+            const [n, setN] = useState(5);
+            const [showSumProof, setShowSumProof] = useState(false);
+            const sequence = Array.from({ length: n }, (_, i) => a1 + i * d);
+            const lastTerm = a1 + (n - 1) * d;
+            const sum = (n * (a1 + lastTerm)) / 2;
+
+            return (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Icon name="layers" className="text-blue-500" /> 參數設定</h2>
+                        <div className="space-y-6">
+                            <div>首項 (a₁): <span className="font-bold text-blue-600">{a1}</span><input type="range" min="1" max="10" value={a1} onChange={e=>setA1(parseInt(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer mt-2" /></div>
+                            <div>公差 (d): <span className="font-bold text-blue-600">{d}</span><input type="range" min="-5" max="5" value={d} onChange={e=>setD(parseInt(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer mt-2" /></div>
+                            <div>項數 (n): <span className="font-bold text-blue-600">{n}</span><input type="range" min="2" max="20" value={n} onChange={e=>setN(parseInt(e.target.value))} className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer mt-2" /></div>
+                            <button onClick={() => setShowSumProof(!showSumProof)} className={`w-full py-3 rounded-xl border ${showSumProof ? 'bg-orange-50 text-orange-700 border-orange-200' : 'bg-slate-50'}`}>
+                                {showSumProof ? '隱藏高斯拼圖' : '顯示總和魔法 (高斯拼圖)'}
+                            </button>
+                        </div>
+                    </div>
+                    <div className="lg:col-span-2 space-y-6">
+                        <div className="bg-white p-6 rounded-2xl border min-h-[400px] flex flex-col items-center justify-end relative overflow-hidden">
+                            <div className="flex items-end gap-2 pb-8">
+                                {sequence.map((val, idx) => (
+                                    <div key={idx} className="flex flex-col items-center w-8 sm:w-12">
+                                        <div className="bg-blue-500 w-full rounded-t-md relative group" style={{ height: `${Math.abs(val) * 15}px` }}>
+                                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 bg-slate-800 text-white text-xs px-2 py-1 rounded">{val}</div>
+                                            {showSumProof && <div className="absolute bottom-full w-full bg-orange-400 opacity-80 border-t border-white" style={{ height: `${Math.abs(lastTerm + a1 - val) * 15}px` }}></div>}
+                                        </div>
+                                        <span className="text-[10px] mt-1 text-slate-400">n={idx+1}</span>
+                                    </div>
+                                ))}
+                            </div>
+                            {showSumProof && <div className="absolute top-4 right-4 bg-orange-50 p-3 rounded-lg border border-orange-200 text-xs animate-bounce-in">矩形總面積 = n × (首項+末項)</div>}
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-blue-50 p-4 rounded-xl text-center">
+                                <p className="text-sm text-blue-800">第 n 項</p>
+                                <p className="text-2xl font-bold text-blue-600">{lastTerm}</p>
+                            </div>
+                            <div className="bg-indigo-50 p-4 rounded-xl text-center">
+                                <p className="text-sm text-indigo-800">總和 Sₙ</p>
+                                <p className="text-2xl font-bold text-indigo-600">{sum}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- 等比數列組件 ---
+        const GeometricMode = () => {
+            const [a1, setA1] = useState(1);
+            const [r, setR] = useState(2);
+            const [n, setN] = useState(6);
+            const sequence = Array.from({ length: n }, (_, i) => a1 * Math.pow(r, i));
+            const maxVal = Math.max(...sequence.map(Math.abs));
+            const scale = maxVal > 300 ? 300 / maxVal : 1;
+
+            return (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
+                    <div className="bg-white p-6 rounded-2xl border">
+                        <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><Icon name="trending-up" className="text-pink-500" /> 生長設定</h2>
+                        <div className="space-y-6">
+                            <div>首項 (a₁): {a1}<input type="range" min="1" max="5" value={a1} onChange={e=>setA1(parseInt(e.target.value))} className="w-full mt-2" /></div>
+                            <div>公比 (r): {r}<input type="range" min="-2" max="3" step="0.5" value={r} onChange={e=>setR(parseFloat(e.target.value))} className="w-full mt-2" /></div>
+                            <div>項數 (n): {n}<input type="range" min="2" max="10" value={n} onChange={e=>setN(parseInt(e.target.value))} className="w-full mt-2" /></div>
+                        </div>
+                    </div>
+                    <div className="lg:col-span-2 bg-slate-900 p-6 rounded-2xl flex items-center justify-center min-h-[400px] relative">
+                        <div className="w-full h-[1px] bg-slate-700 absolute"></div>
+                        <div className="flex items-center gap-4">
+                            {sequence.map((val, idx) => (
+                                <div key={idx} className="relative flex flex-col items-center group">
+                                    <div className={`w-1 rounded-full ${val >= 0 ? 'bg-pink-500' : 'bg-cyan-500'}`} style={{ height: `${Math.abs(val) * scale * 20}px` }}></div>
+                                    <div className="w-3 h-3 bg-white rounded-full absolute" style={{ bottom: val >= 0 ? `${val * scale * 20}px` : 'auto', top: val < 0 ? `${Math.abs(val) * scale * 20}px` : 'auto' }}></div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- 挑戰模式 ---
+        const ChallengeMode = () => {
+            const [level, setLevel] = useState(0);
+            const [userInput, setUserInput] = useState('');
+            const [feedback, setFeedback] = useState(null);
+            const questions = [
+                { seq: [2, 5, 8, 11], next: 14, hint: "公差是 3" },
+                { seq: [3, 6, 12, 24], next: 48, hint: "公比是 2" },
+                { seq: [1, 1, 2, 3, 5], next: 8, hint: "前兩項相加" }
+            ];
+            const q = questions[level];
+            
+            const check = (e) => {
+                e.preventDefault();
+                if (parseInt(userInput) === q.next) {
+                    setFeedback('correct');
+                    setTimeout(() => { setLevel(level + 1); setUserInput(''); setFeedback(null); }, 1000);
+                } else {
+                    setFeedback('wrong');
+                }
+            };
+
+            if (level >= questions.length) return <div className="text-center p-10 bg-white rounded-2xl shadow">🎉 太強了！通關！<button onClick={()=>setLevel(0)} className="block mx-auto mt-4 text-blue-600 underline">重玩</button></div>;
+
+            return (
+                <div className="max-w-md mx-auto bg-white p-8 rounded-2xl border text-center shadow-sm">
+                    <p className="text-sm text-slate-400 mb-4">Level {level + 1}</p>
+                    <div className="flex justify-center gap-2 mb-8">
+                        {q.seq.map((n, i) => <div key={i} className="w-12 h-12 flex items-center justify-center bg-slate-100 rounded-lg font-bold">{n}</div>)}
+                        <div className="w-12 h-12 flex items-center justify-center bg-blue-100 text-blue-600 rounded-lg font-bold animate-pulse">?</div>
+                    </div>
+                    <form onSubmit={check}>
+                        <input type="number" value={userInput} onChange={e=>setUserInput(e.target.value)} className="w-full p-3 border rounded-xl text-center text-xl mb-4" placeholder="答案是？" />
+                        <button className="w-full bg-blue-600 text-white py-3 rounded-xl">送出</button>
+                    </form>
+                    {feedback === 'wrong' && <p className="text-red-500 mt-2 text-sm">提示：{q.hint}</p>}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<SequenceLab />);
     </script>
 </body>
